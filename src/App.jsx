@@ -1,15 +1,13 @@
+import { useEffect } from "react";
 import Flow from "./components/Flow/Flow";
 import Navbar from "./components/Navbar/Navbar";
 import "./App.css";
 import { ThemeProvider } from "@emotion/react";
 import { createTheme } from "@mui/material";
-import { useCallback, useRef, useState } from "react";
-import TextNode from "./components/Flow/NodeType/TextNode/TextNode";
 import SidePanel from "./components/SidePanel/SidePanel";
-import { Provider, useDispatch } from "react-redux";
-import { addNode } from "./Store/store";
+import { useDispatch } from "react-redux";
+import { updateStore } from "./Store/store";
 import Message from "./components/Message/Message";
-import { DndContext } from "@dnd-kit/core";
 
 const theme = createTheme({
     palette: {
@@ -34,35 +32,40 @@ const theme = createTheme({
         fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
     },
 });
+
 function App() {
     const dispatch = useDispatch();
-    const reactFlowWrapper = useRef();
-
-    const handleOnSave = () => {};
-
-    const handleDrop = useCallback((event) => {
-        dispatch(addNode(event.active.data.current));
-    }, []);
-
+    useEffect(() => {
+        const flowState = localStorage.getItem("flowState");
+        if (flowState) {
+            try {
+                const { nodes, edges } = JSON.parse(flowState);
+                const store = {
+                    nodes: nodes || [],
+                    edges: edges || [],
+                };
+                dispatch(updateStore(store));
+            } catch (error) {
+                console.error(
+                    "Error parsing flowState from localStorage:",
+                    error
+                );
+                // Handle error, e.g., dispatch an error action or set default state
+                dispatch(updateStore({ nodes: [], edges: [] }));
+            }
+        } else {
+            // If flowState does not exist in localStorage, set default state
+            dispatch(updateStore({ nodes: [], edges: [] }));
+        }
+    }, [dispatch]);
     return (
         <ThemeProvider theme={theme}>
             <div className="app">
                 <Message />
-                <Navbar onSave={handleOnSave} />
+                <Navbar />
                 <div style={{ height: "100%", display: "flex" }}>
-                    <DndContext onDragEnd={handleDrop}>
-                        <div
-                            ref={reactFlowWrapper}
-                            className="reactflow-wrapper"
-                            style={{
-                                height: "100%",
-                                width: "100%",
-                            }}
-                        >
-                            <Flow />
-                        </div>
-                        <SidePanel />
-                    </DndContext>
+                    <Flow />
+                    <SidePanel />
                 </div>
             </div>
         </ThemeProvider>

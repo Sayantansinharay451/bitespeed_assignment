@@ -1,28 +1,18 @@
-import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { MessageOutlined } from "@mui/icons-material";
 import { Button, Typography } from "@mui/material";
-import React from "react";
 
-const TextButton = () => {
-    const { attributes, listeners, setButtonRef, transform } = useDraggable({
-        id: "button-draggable",
-        data: {
-            type: "textNode",
-            data: {
-                label: null,
-            },
-        },
-    });
-    const style = {
-        transform: CSS.Translate.toString(transform),
-    };
+const textNode = {
+    type: "textNode",
+    data: {
+        label: "",
+    },
+};
 
+const TextButton = ({ onDrag }) => {
     return (
         <Button
-            ref={setButtonRef}
-            {...listeners}
-            {...attributes}
+            draggable
+            onDragStart={(event) => onDrag(event, textNode)}
             sx={{
                 display: "flex",
                 flexDirection: "column",
@@ -30,7 +20,6 @@ const TextButton = () => {
                 borderWidth: "0.25rem",
                 padding: "1rem 3rem",
             }}
-            style={style}
             variant="outlined"
             color="blue"
         >

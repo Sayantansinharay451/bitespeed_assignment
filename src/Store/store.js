@@ -1,45 +1,33 @@
 import { createSlice, configureStore } from "@reduxjs/toolkit";
-import { MarkerType, Position } from "reactflow";
+import { createSelector } from "@reduxjs/toolkit";
+import { Position } from "reactflow";
 import { v4 as uuid } from "uuid";
 
-const createNode = (data, type) => {
+export const createNode = (data, type, position) => {
     return {
         id: uuid(),
         data: data,
-        sourcePosition: Position.Left,
-        targetPosition: Position.Right,
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
         type: type,
+        position: position,
+        absolutePosition: position,
         selected: true,
-        position: { x: 0, y: 0 },
     };
 };
 
+export const createEdge = (source, target) => {
+    return {
+        id: `${source}-${target}`,
+        source: source,
+        target: target,
+    };
+};
 // Define the initial state
 const initialState = {
-    nodes: [
-        {
-            id: "1",
-            data: { label: "Hello" },
-            position: { x: 0, y: 0 },
-            type: "textNode",
-        },
-        {
-            id: "2",
-            data: { label: "World" },
-            position: { x: 100, y: 100 },
-        },
-    ],
-    edges: [
-        {
-            id: "1-2",
-            source: "1",
-            target: "2",
-            markerEnd: {
-                type: MarkerType.ArrowClosed,
-            },
-        },
-    ],
-    selectedNode: null,
+    nodes: [],
+    edges: [],
+    message: {},
 };
 
 // Define the slice
@@ -48,69 +36,74 @@ const flowSlice = createSlice({
     initialState,
     reducers: {
         addNode: (state, action) => {
-            const { data, type } = action.payload;
-            const newNode = createNode(data, type);
-            console.log(newNode);
+            const { data, type, position } = action.payload;
+            const newNode = createNode(data, type, position);
             state.nodes.push(newNode);
         },
-        updateNode: (state, action) => {
-            const { id, data } = action.payload;
-            const nodeIndex = state.nodes.findIndex((node) => node.id === id);
-            if (nodeIndex !== -1) {
-                state.nodes[nodeIndex] = { ...state.nodes[nodeIndex], ...data };
-            }
+        deselectNodes: (state) => {
+            state.nodes = state.nodes.map((node) => ({
+                ...node,
+                selected: false,
+            }));
         },
-        selectNode: (state, action) => {
-            state.selectedNode = action.payload;
-        },
-        deselectNode: (state) => {
-            state.selectedNode = null;
-        },
-        addEdge: (state, action) => {
-            state.edges.push(action.payload);
-        },
-        updateEdge: (state, action) => {
-            const { id, data } = action.payload;
-            const edgeIndex = state.edges.findIndex((edge) => edge.id === id);
-            if (edgeIndex !== -1) {
-                state.edges[edgeIndex] = { ...state.edges[edgeIndex], ...data };
-            }
-        },
-        removeNode: (state, action) => {
-            state.nodes = state.nodes.filter(
-                (node) => node.id !== action.payload
+        updateNodeData: (state, action) => {
+            const updatedNode = action.payload;
+            state.nodes = state.nodes.map((node) =>
+                node.id === updatedNode.id ? updatedNode : node
             );
         },
-        removeEdge: (state, action) => {
-            state.edges = state.edges.filter(
-                (edge) => edge.id !== action.payload
-            );
+        updateStore: (state, action) => {
+            const { nodes, edges } = action.payload;
+            state.nodes = nodes || [];
+            state.edges = edges || [];
         },
-        save: (state, action) => {},
+        resetMessage: (state) => {
+            state.message = {};
+        },
+        saveNodes: (state) => {
+            const nodeIds = state.nodes.map((node) => node.id);
+            const ids = new Set(
+                state.edges.flatMap((edge) => [edge.target, edge.source])
+            );
+
+            if (nodeIds.length === ids.size) {
+                localStorage.setItem(
+                    "flowState",
+                    JSON.stringify({ nodes: state.nodes, edges: state.edges })
+                );
+                state.message = {
+                    status: "success",
+                    text: "Flow saved successfully!",
+                };
+            } else {
+                state.message = {
+                    status: "error",
+                    text: "Flow can't be saved!",
+                };
+            }
+        },
     },
 });
+
+const selectNodes = (state) => state.nodes;
+
+export const selectedNodes = createSelector([selectNodes], (nodes) =>
+    nodes.filter((nodes) => nodes.selected)
+);
 
 // Export the actions
 export const {
     addNode,
-    updateNode,
-    selectNode,
-    deselectNode,
-    addEdge,
-    updateEdge,
-    removeNode,
-    removeEdge,
+    deselectNodes,
+    updateNodeData,
+    updateStore,
+    resetMessage,
+    saveNodes,
 } = flowSlice.actions;
 
 // Create the store
 const store = configureStore({
-    reducer: {
-        flow: flowSlice.reducer,
-    },
-});
-
-store.subscribe(() => {
-    localStorage.setItem("flowState", JSON.stringify(store.getState().flow));
+    reducer: flowSlice.reducer,
 });
 
 export default store;

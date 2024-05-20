@@ -1,14 +1,8 @@
 import { Message } from "@mui/icons-material";
 import { Box, Typography } from "@mui/material";
-import { useCallback } from "react";
-import { Handle, Position } from "reactflow";
+import { Handle } from "reactflow";
 
-function TextNode({ data, selected, targetPosition, sourcePosition }) {
-    // const onChange = useCallback((evt) => {
-    //     console.log(evt.target.value);
-    //     console.log(data);
-    // }, []);
-
+const TextNode = ({ data, selected, targetPosition, sourcePosition }) => {
     return (
         <>
             <Handle type="target" position={targetPosition} />
@@ -20,7 +14,6 @@ function TextNode({ data, selected, targetPosition, sourcePosition }) {
                     borderRadius: "0.5rem",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "0.2rem",
                     overflow: "hidden",
                     outlineStyle: "solid",
                     outlineColor: (theme) => theme.palette.blue.dark,
@@ -32,7 +25,7 @@ function TextNode({ data, selected, targetPosition, sourcePosition }) {
                 <Box
                     sx={{
                         height: "25%",
-                        width: "100%",
+                        width: "auto",
                         display: "flex",
                         gap: "0.5rem",
                         padding: "0.5rem 1rem",
@@ -62,6 +55,9 @@ function TextNode({ data, selected, targetPosition, sourcePosition }) {
                         padding: "0.5rem 1rem",
                         background: (theme) => theme.palette.white.main,
                         height: "100%",
+                        width: "auto",
+                        overflowY: "auto",
+                        overflowX: "hidden",
                     }}
                 >
                     <Typography
@@ -71,6 +67,10 @@ function TextNode({ data, selected, targetPosition, sourcePosition }) {
                         sx={{
                             fontWeight: "400",
                             fontSize: "0.75rem",
+                            overflowWrap: "break-word",
+                            width: "auto",
+                            whiteSpace: "break-spaces",
+                            textWrap: "balance",
                         }}
                     >
                         {data.label}
@@ -80,6 +80,6 @@ function TextNode({ data, selected, targetPosition, sourcePosition }) {
             <Handle type="source" position={sourcePosition} id="a" />
         </>
     );
-}
+};
 
 export default TextNode;

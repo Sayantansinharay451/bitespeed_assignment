@@ -1,8 +1,21 @@
-import { Button, Toolbar, useTheme } from "@mui/material";
+import { Button, Toolbar } from "@mui/material";
+import { useDispatch } from "react-redux";
+import { deselectNodes, saveNodes, updateStore } from "../../Store/store";
+import { useReactFlow } from "reactflow";
 
 const Navbar = () => {
-    const theme = useTheme();
-    console.log(theme);
+    const reactFlowInstance = useReactFlow();
+    const dispatch = useDispatch();
+    const handleSave = () => {
+        dispatch(
+            updateStore({
+                nodes: reactFlowInstance.getNodes(),
+                edges: reactFlowInstance.getEdges(),
+            })
+        );
+        dispatch(deselectNodes());
+        dispatch(saveNodes());
+    };
     return (
         <Toolbar
             sx={{
@@ -26,6 +39,7 @@ const Navbar = () => {
                 aria-details="Save the chat flow"
                 variant="outlined"
                 color="blue"
+                onClick={handleSave}
             >
                 Save Changes
             </Button>

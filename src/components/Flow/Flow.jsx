@@ -1,42 +1,48 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import ReactFlow, {
-    Background,
-    Panel,
+    MarkerType,
     addEdge,
-    applyEdgeChanges,
-    applyNodeChanges,
-    isNode,
     updateEdge,
     useEdgesState,
     useNodesState,
+    useOnSelectionChange,
+    useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import PropTypes from "prop-types";
-import { Box } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
-import { selectNode } from "../../Store/store";
-import { useDroppable } from "@dnd-kit/core";
+import { addNode, updateStore } from "../../Store/store";
 import { nodeTypes } from "./NodeType/NodeType";
+
+const defaultEdgeOptions = {
+    markerEnd: {
+        type: MarkerType.ArrowClosed,
+    },
+    deletable: true,
+};
 
 const Flow = () => {
     const dispatch = useDispatch();
-    const initialNodes = useSelector((state) => state.flow.nodes);
-    const initialEdges = useSelector((state) => state.flow.edges);
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const initialNodes = useSelector((store) => store.nodes);
+    const initialEdges = useSelector((store) => store.edges);
+    const reactFlowInstance = useReactFlow();
+    const [nodes, setNodes, onNodesChange] = useNodesState();
+    const [edges, setEdges, onEdgesChange] = useEdgesState();
     const edgeUpdateSuccessful = useRef(true);
-
-    const { setNodeRef } = useDroppable({
-        id: "flow-droppable",
-        data: {
-            accepts: [...Object.keys(nodeTypes)],
-        },
-    });
 
     useEffect(() => {
         setNodes(initialNodes);
         setEdges(initialEdges);
     }, [initialEdges, initialNodes, setEdges, setNodes]);
+
+    const handleOnNodeDragStop = () => {
+        dispatch(updateStore({ nodes, edges }));
+    };
+
+    useOnSelectionChange({
+        onChange: () => {
+            dispatch(updateStore({ nodes, edges }));
+        },
+    });
 
     const handleOnEdgesChange = useCallback(
         (changes) => {
@@ -45,70 +51,89 @@ const Flow = () => {
         [onEdgesChange]
     );
 
-    const onConnect = useCallback(
-        ({ source, target }) => {
-            return setEdges((eds) =>
-                nodes
-                    .filter((node) => node.id === source || node.selected)
-                    .reduce(
-                        (eds, node) =>
-                            addEdge({ source: node.id, target }, eds),
-                        eds
-                    )
-            );
+    const handleOnNodesChange = useCallback(
+        (changes) => {
+            onNodesChange(changes);
         },
-        [nodes]
+        [onNodesChange]
     );
 
-    const onSelectionChange = (elements) => {
-        dispatch(selectNode(elements.nodes));
-    };
+    const onConnect = useCallback(
+        (params) => setEdges((els) => addEdge(params, els)),
+        [setEdges]
+    );
 
     const onEdgeUpdateStart = useCallback(() => {
         edgeUpdateSuccessful.current = false;
     }, []);
 
-    const onEdgeUpdate = useCallback((oldEdge, newConnection) => {
-        edgeUpdateSuccessful.current = true;
-        setEdges((els) => updateEdge(oldEdge, newConnection, els));
+    const onEdgeUpdate = useCallback(
+        (oldEdge, newConnection) => {
+            edgeUpdateSuccessful.current = true;
+            setEdges((els) => updateEdge(oldEdge, newConnection, els));
+        },
+        [setEdges]
+    );
+
+    const onEdgeUpdateEnd = useCallback(
+        (_, edge) => {
+            if (!edgeUpdateSuccessful.current) {
+                setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+            }
+            edgeUpdateSuccessful.current = true;
+        },
+        [setEdges]
+    );
+
+    const onDragOver = useCallback((event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
     }, []);
 
-    const onEdgeUpdateEnd = useCallback((_, edge) => {
-        if (!edgeUpdateSuccessful.current) {
-            setEdges((eds) => eds.filter((e) => e.id !== edge.id));
-        }
-
-        edgeUpdateSuccessful.current = true;
-    }, []);
+    const onDrop = useCallback(
+        (event) => {
+            event.preventDefault();
+            const { type, data } = JSON.parse(
+                event.dataTransfer.getData("flow")
+            );
+            if (typeof type === "undefined" || !type) {
+                return;
+            }
+            const position = reactFlowInstance.screenToFlowPosition({
+                x: event.clientX,
+                y: event.clientY,
+            });
+            dispatch(updateStore({ nodes, edges }));
+            dispatch(addNode({ type, data, position }));
+        },
+        [dispatch, reactFlowInstance, nodes, edges]
+    );
 
     return (
-        <Box
-            ref={setNodeRef}
-            sx={{
+        <div
+            style={{
                 width: "100%",
                 height: "100%",
-                background: (theme) => theme.palette.white.light,
             }}
         >
             <ReactFlow
                 nodes={nodes}
-                onNodesChange={onNodesChange}
                 edges={edges}
+                onNodesChange={handleOnNodesChange}
                 onEdgesChange={handleOnEdgesChange}
                 onEdgeUpdate={onEdgeUpdate}
                 onEdgeUpdateStart={onEdgeUpdateStart}
                 onEdgeUpdateEnd={onEdgeUpdateEnd}
                 onConnect={onConnect}
                 nodeTypes={nodeTypes}
-                onSelectionChange={onSelectionChange}
                 fitView
-            ></ReactFlow>
-        </Box>
+                onNodeDragStop={handleOnNodeDragStop}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                defaultEdgeOptions={defaultEdgeOptions}
+            />
+        </div>
     );
-};
-
-Flow.propTypes = {
-    nodeTypes: PropTypes.object.isRequired,
 };
 
 export default Flow;

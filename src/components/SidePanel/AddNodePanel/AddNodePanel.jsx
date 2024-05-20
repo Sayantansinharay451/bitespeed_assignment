@@ -1,9 +1,13 @@
 import React from "react";
-import { useDraggable } from "@dnd-kit/core";
 import { Box } from "@mui/material";
-import { nodeList } from "./NodeList";
+import { nodeList } from "../NodeList";
 
 const AddNodePanel = () => {
+    const handleDrag = (event, node) => {
+        event.dataTransfer.setData("flow", JSON.stringify(node));
+        event.dataTransfer.effectAllowed = "move";
+        // console.log(event);
+    };
     return (
         <Box
             sx={{
@@ -13,10 +17,10 @@ const AddNodePanel = () => {
             }}
         >
             {Object.keys(nodeList).map((key) => {
-                const Component = nodeList[key];
+                const Component = nodeList[key].Button;
                 return (
                     <div key={key}>
-                        <Component />
+                        <Component onDrag={handleDrag} />
                     </div>
                 );
             })}

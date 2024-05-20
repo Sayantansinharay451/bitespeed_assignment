@@ -1,33 +1,18 @@
-import { Box, TextareaAutosize, Typography } from "@mui/material";
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { addNode } from "../../Store/store";
+import { Box } from "@mui/material";
 import SettingsPanel from "./SettingsPanel/SettingsPanel";
 import AddNodePanel from "./AddNodePanel/AddNodePanel";
+import { selectedNodes, updateNodeData } from "../../Store/store";
+import { useDispatch, useSelector } from "react-redux";
 
 const SidePanel = () => {
-    const selectedNode = useSelector((state) => state.flow.selectedNode);
-    const [nodes, setNodes] = useState(selectedNode);
-
-    // Update data state whenever selectedNode changes
-    useEffect(() => {
-        setNodes(selectedNode);
-    }, [selectedNode]);
-
-    const handleModifyNode = (event, selectedNodeId) => {
-        const newLabel = event.target.value;
-
-        setNodes((prevNodes) => {
-            const updatedNode = {
-                ...prevNodes.find((node) => node.id === selectedNodeId),
-                data: {
-                    label: newLabel,
-                },
-            };
-            return prevNodes.map((node) =>
-                node.id === selectedNodeId ? updatedNode : node
-            );
-        });
+    const dispatch = useDispatch();
+    const nodes = useSelector((state) => selectedNodes(state));
+    const handleModifyNode = (data, selectedNodeId) => {
+        const updatedNode = {
+            ...nodes.find((node) => node.id === selectedNodeId),
+            data: data,
+        };
+        dispatch(updateNodeData(updatedNode));
     };
 
     return (

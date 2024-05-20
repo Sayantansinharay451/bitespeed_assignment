@@ -1,17 +1,11 @@
 import { ArrowBack } from "@mui/icons-material";
-import {
-    Box,
-    Divider,
-    IconButton,
-    TextareaAutosize,
-    Typography,
-} from "@mui/material";
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { Box, IconButton, Typography } from "@mui/material";
+import { useDispatch } from "react-redux";
+import { nodeList } from "../NodeList";
+import { deselectNodes } from "../../../Store/store";
 
 const SettingsPanel = ({ nodes, modifyNode }) => {
-    console.log(nodes);
-
+    const dispatch = useDispatch();
     return (
         <Box
             sx={{
@@ -28,7 +22,7 @@ const SettingsPanel = ({ nodes, modifyNode }) => {
                     borderBottomStyle: "solid",
                 }}
             >
-                <IconButton>
+                <IconButton onClick={() => dispatch(deselectNodes())}>
                     <ArrowBack />
                 </IconButton>
                 <Typography
@@ -42,29 +36,12 @@ const SettingsPanel = ({ nodes, modifyNode }) => {
                     Back
                 </Typography>
             </Box>
-            {nodes.map((node) => (
-                <Box key={node.id}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "flex-start",
-                            padding: "2rem",
-                        }}
-                    >
-                        <Typography align="left" variant="subtitle2">
-                            Text:
-                        </Typography>
-                        <TextareaAutosize
-                            minRows={3}
-                            maxRows={5}
-                            value={node.data.label ? node.data.label : ""}
-                            onChange={(event) => modifyNode(event, node.id)}
-                        />
-                    </Box>
-                    <Divider />
-                </Box>
-            ))}
+            {nodes.map((node) => {
+                const Editor = nodeList[node.type].Editor;
+                return (
+                    <Editor key={node.id} node={node} modifyNode={modifyNode} />
+                );
+            })}
         </Box>
     );
 };
