@@ -1,11 +1,10 @@
-import { createSlice, configureStore } from "@reduxjs/toolkit";
+import { createSlice, configureStore, nanoid } from "@reduxjs/toolkit";
 import { createSelector } from "@reduxjs/toolkit";
 import { Position } from "reactflow";
-import { v4 as uuid } from "uuid";
 
 export const createNode = (data, type, position) => {
     return {
-        id: uuid(),
+        id: nanoid(),
         data: data,
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
